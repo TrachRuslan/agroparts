@@ -226,7 +226,9 @@ export const ProductCard = ({ product, view = "grid" }: ProductCardProps) => {
 
         <button
           type="button"
-          className="mt-4 w-full py-3 bg-white/[0.04] border border-white/10 rounded-xl text-white font-bold text-sm hover:bg-agro-yellow hover:text-black hover:border-agro-yellow transition-all md:hidden"
+          onClick={() => addToCart(product)}
+          disabled={!product.inStock}
+          className="mt-4 w-full py-3 bg-white/[0.04] border border-white/10 rounded-xl text-white font-bold text-sm hover:bg-agro-yellow hover:text-black hover:border-agro-yellow transition-all md:hidden disabled:opacity-40"
         >
           У кошик
         </button>

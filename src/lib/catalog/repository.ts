@@ -112,6 +112,12 @@ export function getBrands(): string[] {
   return [...new Set(products.map((p) => p.brand))].sort()
 }
 
+export function getTrendingProducts(limit = 6): Product[] {
+  return products
+    .filter((p) => p.isBestSeller || p.isPopular || p.isNew)
+    .slice(0, limit)
+}
+
 function matchesQuery(text: string, q: string): boolean {
   const words = q.split(/\s+/).filter(Boolean)
   const hay = text.toLowerCase()

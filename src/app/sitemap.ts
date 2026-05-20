@@ -7,6 +7,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const staticPages: MetadataRoute.Sitemap = [
     { url: absoluteUrl("/"), changeFrequency: "daily", priority: 1 },
     { url: absoluteUrl("/catalog"), changeFrequency: "daily", priority: 0.95 },
+    { url: absoluteUrl("/about"), changeFrequency: "monthly", priority: 0.6 },
+    { url: absoluteUrl("/contacts"), changeFrequency: "monthly", priority: 0.7 },
+    { url: absoluteUrl("/delivery"), changeFrequency: "monthly", priority: 0.65 },
   ]
 
   const vehiclePages = vehicles.map((v) => ({

@@ -26,6 +26,9 @@ import { getVehicle } from "@/lib/catalog/vehicles"
 import { getSystem } from "@/lib/catalog/systems"
 import { useCartStore } from "@/stores/cart-store"
 import { useRecentStore } from "@/stores/recent-store"
+import { useCompareStore } from "@/stores/compare-store"
+import { useWishlistStore } from "@/stores/wishlist-store"
+import { Heart } from "lucide-react"
 import { ProductCard } from "@/components/catalog/ProductCard"
 import { formatPrice, cn } from "@/lib/utils"
 import { notFound } from "next/navigation"
@@ -36,6 +39,9 @@ export function ProductDetailView({ productSlug }: { productSlug: string }) {
   const product = getProductBySlug(productSlug)
   const addRecent = useRecentStore((s) => s.add)
   const addToCart = useCartStore((s) => s.addItem)
+  const toggleCompare = useCompareStore((s) => s.toggle)
+  const toggleWishlist = useWishlistStore((s) => s.toggle)
+  const isWishlisted = useWishlistStore((s) => s.has(productSlug))
 
   React.useEffect(() => {
     if (product) addRecent(product.slug)
@@ -242,6 +248,20 @@ export function ProductDetailView({ productSlug }: { productSlug: string }) {
                 </button>
                 <button
                   type="button"
+                  onClick={() => toggleWishlist(product.slug)}
+                  className={cn(
+                    "w-12 h-12 rounded-xl border flex items-center justify-center transition-colors",
+                    isWishlisted
+                      ? "border-red-400/40 text-red-400"
+                      : "border-white/10 text-white/50 hover:text-red-400"
+                  )}
+                  aria-label="Обране"
+                >
+                  <Heart className={cn("w-5 h-5", isWishlisted && "fill-current")} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => toggleCompare(product.slug)}
                   className="w-12 h-12 rounded-xl border border-white/10 flex items-center justify-center text-white/50 hover:text-agro-yellow hover:border-agro-yellow/30 transition-colors"
                   aria-label="Порівняти"
                 >

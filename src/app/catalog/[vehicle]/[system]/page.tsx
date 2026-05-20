@@ -8,7 +8,10 @@ import { JsonLd, breadcrumbJsonLd } from "@/lib/seo/json-ld"
 
 export const revalidate = 3600
 
-type Props = { params: Promise<{ vehicle: string; system: string }> }
+type Props = {
+  params: Promise<{ vehicle: string; system: string }>
+  searchParams: Promise<{ q?: string }>
+}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { vehicle: v, system: s } = await params
@@ -22,8 +25,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   })
 }
 
-export default async function SystemPage({ params }: Props) {
+export default async function SystemPage({ params, searchParams }: Props) {
   const { vehicle: v, system: s } = await params
+  const { q } = await searchParams
   const vehicleSlug = resolveVehicleSlug(v)
   const vehicle = getVehicle(vehicleSlug)
   const system = getSystem(s)
@@ -43,7 +47,11 @@ export default async function SystemPage({ params }: Props) {
           },
         ])}
       />
-      <SystemCatalog vehicleSlug={vehicleSlug} systemSlug={s} />
+      <SystemCatalog
+        vehicleSlug={vehicleSlug}
+        systemSlug={s}
+        initialSearch={q?.trim()}
+      />
     </>
   )
 }

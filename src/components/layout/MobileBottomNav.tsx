@@ -64,8 +64,11 @@ export function MobileBottomNav({ onSearchOpen }: MobileBottomNavProps) {
           )
         })}
         <Link
-          href="/catalog"
-          className="flex flex-col items-center justify-center gap-0.5 text-white/45 relative"
+          href="/cart"
+          className={cn(
+            "flex flex-col items-center justify-center gap-0.5 relative transition-colors",
+            pathname === "/cart" ? "text-agro-yellow" : "text-white/45"
+          )}
           aria-label="Кошик"
         >
           <ShoppingCart className="w-5 h-5" />

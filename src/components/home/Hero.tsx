@@ -184,7 +184,7 @@ export const Hero = () => {
                 </div>
               </div>
               <Link
-                href={`/product/${featuredProduct.id}`}
+                href={`/product/${featuredProduct.slug}`}
                 className="mt-4 flex items-center justify-center gap-1 w-full py-2.5 rounded-xl bg-white/5 border border-white/10 text-xs font-bold text-white hover:bg-agro-yellow hover:text-black hover:border-agro-yellow transition-all"
               >
                 Переглянути

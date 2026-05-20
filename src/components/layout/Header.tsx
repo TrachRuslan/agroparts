@@ -5,6 +5,7 @@ import Link from "next/link"
 import {
   Search,
   ShoppingCart,
+  Heart,
   User,
   Menu,
   X,
@@ -15,13 +16,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { categories, countProducts } from "@/lib/mock-data"
 import { useCartStore } from "@/stores/cart-store"
-
-const navLinks = [
-  { name: "Головна", href: "/" },
-  { name: "Доставка", href: "/delivery" },
-  { name: "Відгуки", href: "/#reviews" },
-  { name: "Контакти", href: "/contacts" },
-]
+import { MAIN_NAV } from "@/lib/site-content"
 
 interface HeaderProps {
   onSearchOpen?: () => void
@@ -67,41 +62,39 @@ export const Header = ({ onSearchOpen }: HeaderProps) => {
           </Link>
 
           <nav className="hidden lg:flex items-center gap-6">
-            <Link
-              href="/"
-              className="text-sm font-medium text-white/70 hover:text-agro-yellow transition-colors"
-            >
-              Головна
-            </Link>
-            <motion.div
-              className="relative"
-              onMouseEnter={() => setMegaOpen(true)}
-            >
-              <Link
-                href="/catalog"
-                className={cn(
-                  "flex items-center gap-1 text-sm font-medium transition-colors",
-                  megaOpen ? "text-agro-yellow" : "text-white/70 hover:text-agro-yellow"
-                )}
-              >
-                Каталог
-                <ChevronDown
-                  className={cn(
-                    "w-4 h-4 transition-transform",
-                    megaOpen && "rotate-180"
-                  )}
-                />
-              </Link>
-            </motion.div>
-            {navLinks.slice(1).map((link) => (
-              <Link
-                key={link.name}
-                href={link.href}
-                className="text-sm font-medium text-white/70 hover:text-agro-yellow transition-colors"
-              >
-                {link.name}
-              </Link>
-            ))}
+            {MAIN_NAV.map((link) =>
+              link.href === "/catalog" ? (
+                <motion.div
+                  key={link.href}
+                  className="relative"
+                  onMouseEnter={() => setMegaOpen(true)}
+                >
+                  <Link
+                    href="/catalog"
+                    className={cn(
+                      "flex items-center gap-1 text-sm font-medium transition-colors",
+                      megaOpen ? "text-agro-yellow" : "text-white/70 hover:text-agro-yellow"
+                    )}
+                  >
+                    {link.label}
+                    <ChevronDown
+                      className={cn(
+                        "w-4 h-4 transition-transform",
+                        megaOpen && "rotate-180"
+                      )}
+                    />
+                  </Link>
+                </motion.div>
+              ) : (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="text-sm font-medium text-white/70 hover:text-agro-yellow transition-colors"
+                >
+                  {link.label}
+                </Link>
+              )
+            )}
           </nav>
 
           <div className="flex items-center gap-2">
@@ -124,8 +117,15 @@ export const Header = ({ onSearchOpen }: HeaderProps) => {
               <Search className="w-5 h-5" />
             </button>
 
-            <button
-              type="button"
+            <Link
+              href="/wishlist"
+              className="p-2.5 text-white/50 hover:text-agro-yellow hidden sm:block"
+              aria-label="Обране"
+            >
+              <Heart className="w-5 h-5" />
+            </Link>
+            <Link
+              href="/cart"
               className="p-2.5 text-white/50 hover:text-agro-yellow relative"
               aria-label="Кошик"
             >
@@ -135,7 +135,7 @@ export const Header = ({ onSearchOpen }: HeaderProps) => {
                   {cartCount > 9 ? "9+" : cartCount}
                 </span>
               )}
-            </button>
+            </Link>
             <button
               type="button"
               className="p-2.5 text-white/50 hover:text-agro-yellow hidden sm:block"
@@ -212,20 +212,33 @@ export const Header = ({ onSearchOpen }: HeaderProps) => {
             className="lg:hidden border-t border-white/10 bg-black/95 backdrop-blur-xl overflow-hidden max-h-[80vh] overflow-y-auto"
           >
             <div className="p-4 space-y-1">
+              {MAIN_NAV.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="block py-3 text-white/70 font-medium hover:text-agro-yellow"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  {link.label}
+                </Link>
+              ))}
               <Link
-                href="/"
-                className="block py-3 text-white/70 font-medium"
+                href="/wishlist"
+                className="block py-2 text-sm text-white/50"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                Головна
+                Обране
               </Link>
               <Link
-                href="/catalog"
-                className="block py-3 text-agro-yellow font-bold"
+                href="/cart"
+                className="block py-2 text-sm text-white/50"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                Весь каталог
+                Кошик {cartCount > 0 ? `(${cartCount})` : ""}
               </Link>
+              <p className="text-[10px] font-black uppercase tracking-widest text-white/25 pt-4 pb-2">
+                Моделі
+              </p>
               {categories.map((cat) => (
                 <Link
                   key={cat.id}

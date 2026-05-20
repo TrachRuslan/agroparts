@@ -5,9 +5,13 @@ import Link from "next/link"
 import Image from "next/image"
 import { motion, AnimatePresence } from "framer-motion"
 import { Search, X, Package, Tractor, Wrench } from "lucide-react"
-import { searchCatalog, products } from "@/lib/catalog/repository"
-import { cn } from "@/lib/utils"
-import { formatPrice } from "@/lib/utils"
+import {
+  searchCatalog,
+  products as allProducts,
+  getTrendingProducts,
+} from "@/lib/catalog/repository"
+import { useSearchHistoryStore } from "@/stores/search-history-store"
+import { cn, formatPrice } from "@/lib/utils"
 
 type ResultItem =
   | { type: "product"; id: string; href: string; title: string; meta: string; image?: string }
@@ -24,6 +28,9 @@ export function SearchOverlay({ open, onClose, initialQuery = "" }: SearchOverla
   const [query, setQuery] = useState(initialQuery)
   const [activeIndex, setActiveIndex] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
+  const recentQueries = useSearchHistoryStore((s) => s.queries)
+  const addQuery = useSearchHistoryStore((s) => s.add)
+  const trending = getTrendingProducts(5)
 
   useEffect(() => {
     if (open) {
@@ -35,7 +42,7 @@ export function SearchOverlay({ open, onClose, initialQuery = "" }: SearchOverla
   }, [open, initialQuery])
 
   const results = useMemo(() => {
-    const { products, vehicles, systems } = searchCatalog(query, 8)
+    const { products: matched, vehicles, systems } = searchCatalog(query, 8)
     const items: ResultItem[] = [
       ...vehicles.map((v) => ({
         type: "vehicle" as const,
@@ -45,7 +52,7 @@ export function SearchOverlay({ open, onClose, initialQuery = "" }: SearchOverla
         meta: "Модель техніки",
       })),
       ...systems.map((s) => {
-        const sample = products.find((p) => p.systemSlug === s.slug)
+        const sample = allProducts.find((p) => p.systemSlug === s.slug)
         return {
           type: "system" as const,
           id: `s-${s.slug}`,
@@ -56,7 +63,7 @@ export function SearchOverlay({ open, onClose, initialQuery = "" }: SearchOverla
           meta: "Система / вузол",
         }
       }),
-      ...products.map((p) => ({
+      ...matched.map((p) => ({
         type: "product" as const,
         id: `p-${p.slug}`,
         href: `/product/${p.slug}`,
@@ -83,13 +90,20 @@ export function SearchOverlay({ open, onClose, initialQuery = "" }: SearchOverla
         e.preventDefault()
         setActiveIndex((i) => Math.max(i - 1, 0))
       }
-      if (e.key === "Enter" && results[activeIndex]) {
+      if (e.key === "Enter") {
         e.preventDefault()
-        window.location.href = results[activeIndex].href
-        onClose()
+        if (results[activeIndex]) {
+          addQuery(query)
+          window.location.href = results[activeIndex].href
+          onClose()
+        } else if (query.trim().length >= 2) {
+          addQuery(query)
+          window.location.href = `/catalog?q=${encodeURIComponent(query)}`
+          onClose()
+        }
       }
     },
-    [activeIndex, onClose, results]
+    [activeIndex, addQuery, onClose, query, results]
   )
 
   const iconFor = (type: ResultItem["type"]) => {
@@ -152,9 +166,48 @@ export function SearchOverlay({ open, onClose, initialQuery = "" }: SearchOverla
 
               <div className="max-h-[min(60vh,420px)] overflow-y-auto p-2">
                 {query.trim().length < 2 ? (
-                  <p className="text-center text-sm text-white/35 py-8">
-                    Введіть мінімум 2 символи для пошуку
-                  </p>
+                  <div className="p-2 space-y-6">
+                    {recentQueries.length > 0 && (
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-white/30 px-2 mb-2">
+                          Нещодавні
+                        </p>
+                        <div className="flex flex-wrap gap-2 px-2">
+                          {recentQueries.map((q) => (
+                            <button
+                              key={q}
+                              type="button"
+                              onClick={() => setQuery(q)}
+                              className="px-3 py-1.5 rounded-lg bg-white/5 text-xs text-white/60 hover:text-agro-yellow border border-white/10"
+                            >
+                              {q}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-white/30 px-2 mb-2">
+                        Популярні
+                      </p>
+                      <ul className="space-y-0.5">
+                        {trending.map((p) => (
+                          <li key={p.slug}>
+                            <Link
+                              href={`/product/${p.slug}`}
+                              onClick={onClose}
+                              className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/5"
+                            >
+                              <div className="relative w-9 h-9 rounded-lg overflow-hidden bg-[#141414] shrink-0">
+                                <Image src={p.image} alt="" fill className="object-cover" sizes="36px" />
+                              </div>
+                              <span className="text-sm text-white/70 truncate">{p.name}</span>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
                 ) : results.length === 0 ? (
                   <p className="text-center text-sm text-white/35 py-8">
                     Нічого не знайдено за запитом «{query}»

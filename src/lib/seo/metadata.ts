@@ -17,7 +17,9 @@ export function buildMetadata({
   noIndex,
 }: MetaInput): Metadata {
   const url = absoluteUrl(path)
-  const ogImage = image ?? absoluteUrl("/og-default.jpg")
+  const ogImage =
+    image ??
+    "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1200&h=630&fit=crop"
 
   return {
     title,

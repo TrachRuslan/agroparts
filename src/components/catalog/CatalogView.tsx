@@ -34,6 +34,7 @@ interface CatalogViewProps {
   /** @deprecated use systemSlug */
   subcategorySlug?: string
   showCategoryHub?: boolean
+  initialSearch?: string
 }
 
 export function SystemCatalog({
@@ -42,13 +43,15 @@ export function SystemCatalog({
   categorySlug,
   subcategorySlug,
   showCategoryHub = false,
+  initialSearch = "",
 }: CatalogViewProps) {
   const vehicleSlug = vehicleProp ?? categorySlug
   const systemSlug = systemProp ?? subcategorySlug
-  const [searchQuery, setSearchQuery] = useState("")
+  const [searchQuery, setSearchQuery] = useState(initialSearch)
   const [viewType, setViewType] = useState<"grid" | "list">("grid")
   const [sortBy, setSortBy] = useState<SortOption>("popular")
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
   const [expandedCat, setExpandedCat] = useState<string | null>(
     vehicleSlug ?? null
   )
@@ -407,7 +410,15 @@ export function SystemCatalog({
                   {title}
                 </p>
               </div>
-              <motion.div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setMobileFiltersOpen(true)}
+                  className="lg:hidden flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-xs font-bold text-white/70"
+                >
+                  <SlidersHorizontal className="w-4 h-4" />
+                  Фільтри
+                </button>
                 <div className="flex bg-white/[0.04] border border-white/10 rounded-lg p-0.5">
                   <button
                     type="button"
@@ -457,8 +468,62 @@ export function SystemCatalog({
                     Новинки
                   </option>
                 </select>
-              </motion.div>
+              </div>
             </div>
+
+            <AnimatePresence>
+              {mobileFiltersOpen && (
+                <>
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 z-50 bg-black/70 lg:hidden"
+                    onClick={() => setMobileFiltersOpen(false)}
+                  />
+                  <motion.aside
+                    initial={{ x: "-100%" }}
+                    animate={{ x: 0 }}
+                    exit={{ x: "-100%" }}
+                    transition={{ type: "spring", damping: 28, stiffness: 320 }}
+                    className="fixed left-0 top-0 bottom-0 z-50 w-[min(100%,320px)] bg-[#0a0a0a] border-r border-white/10 p-5 overflow-y-auto lg:hidden"
+                  >
+                    <div className="flex items-center justify-between mb-6">
+                      <span className="text-sm font-black uppercase tracking-widest text-white">
+                        Фільтри
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setMobileFiltersOpen(false)}
+                        className="text-white/50 text-sm font-bold"
+                      >
+                        Закрити
+                      </button>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="filter-panel !p-0 overflow-hidden">
+                        <div className="relative">
+                          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/25" />
+                          <input
+                            type="text"
+                            placeholder="Пошук, артикул..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full bg-transparent py-3 pl-11 pr-4 text-white text-sm focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                      <p className="text-xs text-white/40">
+                        Оберіть категорію в десктопному режимі або перейдіть у{" "}
+                        <Link href="/catalog" className="text-agro-yellow">
+                          каталог
+                        </Link>
+                      </p>
+                    </div>
+                  </motion.aside>
+                </>
+              )}
+            </AnimatePresence>
 
             <motion.div
               layout
