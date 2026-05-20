@@ -31,3 +31,13 @@ build/
 
 ### VS Code ###
 .vscode/
+
+node_modules
+.next
+out
+dist
+build
+coverage
+.env
+.idea
+*.log
