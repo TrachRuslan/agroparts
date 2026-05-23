@@ -1,8 +1,8 @@
-import { notFound } from "next/navigation"
 import type { Metadata } from "next"
+import { notFound } from "next/navigation"
 import { SystemCatalog } from "@/components/catalog/CatalogView"
-import { getVehicle, resolveVehicleSlug } from "@/lib/catalog/vehicles"
-import { getSystem } from "@/lib/catalog/systems"
+import { getCategoryBySlug, getSystemBySlug } from "@/lib/catalog/core"
+import { getCatalogSnapshot } from "@/lib/catalog/data"
 import { buildMetadata } from "@/lib/seo/metadata"
 import { JsonLd, breadcrumbJsonLd } from "@/lib/seo/json-ld"
 
@@ -14,25 +14,30 @@ type Props = {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { vehicle: v, system: s } = await params
-  const vehicle = getVehicle(resolveVehicleSlug(v))
-  const system = getSystem(s)
+  const catalog = await getCatalogSnapshot()
+  const { vehicle: vehicleSlug, system: systemSlug } = await params
+  const vehicle = getCategoryBySlug(catalog, vehicleSlug)
+  const system = getSystemBySlug(catalog, systemSlug)
+
   if (!vehicle || !system) return {}
+
   return buildMetadata({
     title: `Запчастини ${system.name} для ${vehicle.name} | AGROPARTS`,
-    description: `Купити ${system.name.toLowerCase()} для ${vehicle.name}. Каталог, ціни, наявність.`,
+    description: `Купити ${system.name.toLowerCase()} для ${vehicle.name}. Каталог, ціни та наявність.`,
     path: `/catalog/${vehicle.slug}/${system.slug}`,
   })
 }
 
 export default async function SystemPage({ params, searchParams }: Props) {
-  const { vehicle: v, system: s } = await params
+  const catalog = await getCatalogSnapshot()
+  const { vehicle: vehicleSlug, system: systemSlug } = await params
   const { q } = await searchParams
-  const vehicleSlug = resolveVehicleSlug(v)
-  const vehicle = getVehicle(vehicleSlug)
-  const system = getSystem(s)
+
+  const vehicle = getCategoryBySlug(catalog, vehicleSlug)
+  const system = getSystemBySlug(catalog, systemSlug)
+
   if (!vehicle || !system) notFound()
-  if (!vehicle.systems.includes(s)) notFound()
+  if (!vehicle.subcategories.some((item) => item.slug === systemSlug)) notFound()
 
   return (
     <>
@@ -40,16 +45,13 @@ export default async function SystemPage({ params, searchParams }: Props) {
         data={breadcrumbJsonLd([
           { name: "Головна", path: "/" },
           { name: "Каталог", path: "/catalog" },
-          { name: vehicle.name, path: `/catalog/${vehicleSlug}` },
-          {
-            name: system.name,
-            path: `/catalog/${vehicleSlug}/${s}`,
-          },
+          { name: vehicle.name, path: `/catalog/${vehicle.slug}` },
+          { name: system.name, path: `/catalog/${vehicle.slug}/${system.slug}` },
         ])}
       />
       <SystemCatalog
-        vehicleSlug={vehicleSlug}
-        systemSlug={s}
+        vehicleSlug={vehicle.slug}
+        systemSlug={system.slug}
         initialSearch={q?.trim()}
       />
     </>

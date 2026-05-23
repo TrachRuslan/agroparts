@@ -5,11 +5,8 @@ import Link from "next/link"
 import Image from "next/image"
 import { motion, AnimatePresence } from "framer-motion"
 import { Search, X, Package, Tractor, Wrench } from "lucide-react"
-import {
-  searchCatalog,
-  products as allProducts,
-  getTrendingProducts,
-} from "@/lib/catalog/repository"
+import { useCatalog } from "@/components/catalog/CatalogProvider"
+import { getTrendingProducts, searchCatalog } from "@/lib/catalog/core"
 import { useSearchHistoryStore } from "@/stores/search-history-store"
 import { cn, formatPrice } from "@/lib/utils"
 
@@ -25,12 +22,13 @@ interface SearchOverlayProps {
 }
 
 export function SearchOverlay({ open, onClose, initialQuery = "" }: SearchOverlayProps) {
+  const catalog = useCatalog()
   const [query, setQuery] = useState(initialQuery)
   const [activeIndex, setActiveIndex] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
   const recentQueries = useSearchHistoryStore((s) => s.queries)
   const addQuery = useSearchHistoryStore((s) => s.add)
-  const trending = getTrendingProducts(5)
+  const trending = useMemo(() => getTrendingProducts(catalog, 5), [catalog])
 
   useEffect(() => {
     if (open) {
@@ -42,7 +40,7 @@ export function SearchOverlay({ open, onClose, initialQuery = "" }: SearchOverla
   }, [open, initialQuery])
 
   const results = useMemo(() => {
-    const { products: matched, vehicles, systems } = searchCatalog(query, 8)
+    const { products: matched, vehicles, systems } = searchCatalog(catalog, query, 8)
     const items: ResultItem[] = [
       ...vehicles.map((v) => ({
         type: "vehicle" as const,
@@ -52,7 +50,7 @@ export function SearchOverlay({ open, onClose, initialQuery = "" }: SearchOverla
         meta: "Модель техніки",
       })),
       ...systems.map((s) => {
-        const sample = allProducts.find((p) => p.systemSlug === s.slug)
+        const sample = catalog.products.find((p) => p.systemSlug === s.slug)
         return {
           type: "system" as const,
           id: `s-${s.slug}`,
@@ -73,7 +71,7 @@ export function SearchOverlay({ open, onClose, initialQuery = "" }: SearchOverla
       })),
     ]
     return items
-  }, [query])
+  }, [catalog, query])
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {

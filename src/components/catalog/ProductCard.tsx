@@ -5,6 +5,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { Star, ShoppingCart, Heart, Eye, GitCompare } from "lucide-react"
+import { useHydrated } from "@/hooks/useHydrated"
 import { Product } from "@/types"
 import { formatPrice, cn } from "@/lib/utils"
 import { useCartStore } from "@/stores/cart-store"
@@ -17,11 +18,13 @@ interface ProductCardProps {
 }
 
 export const ProductCard = ({ product, view = "grid" }: ProductCardProps) => {
+  const hydrated = useHydrated()
   const isList = view === "list"
   const addToCart = useCartStore((s) => s.addItem)
   const toggleWishlist = useWishlistStore((s) => s.toggle)
   const toggleCompare = useCompareStore((s) => s.toggle)
-  const isWishlisted = useWishlistStore((s) => s.has(product.slug))
+  const rawWishlisted = useWishlistStore((s) => s.has(product.slug))
+  const isWishlisted = hydrated ? rawWishlisted : false
   const productHref = `/product/${product.slug}`
 
   return (

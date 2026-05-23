@@ -2,22 +2,35 @@
 
 import Image from "next/image"
 import Link from "next/link"
+import { useMemo } from "react"
 import { GitCompare, X, ShoppingCart } from "lucide-react"
+import { useCatalog } from "@/components/catalog/CatalogProvider"
+import { useHydrated } from "@/hooks/useHydrated"
 import { useCompareStore } from "@/stores/compare-store"
-import { getProductBySlug } from "@/lib/catalog/repository"
+import { getProductBySlug } from "@/lib/catalog/core"
 import { formatPrice, cn } from "@/lib/utils"
 import { useCartStore } from "@/stores/cart-store"
 
 const ROW_LABELS = ["Ціна", "SKU", "Бренд", "Рейтинг", "Наявність"] as const
 
 export function CompareView() {
+  const catalog = useCatalog()
+  const hydrated = useHydrated()
   const slugs = useCompareStore((s) => s.slugs)
   const remove = useCompareStore((s) => s.remove)
   const clear = useCompareStore((s) => s.clear)
   const addToCart = useCartStore((s) => s.addItem)
-  const products = slugs
-    .map((slug) => getProductBySlug(slug))
-    .filter((p): p is NonNullable<typeof p> => Boolean(p))
+  const products = useMemo(
+    () =>
+      slugs
+        .map((slug) => getProductBySlug(catalog, slug))
+        .filter((p): p is NonNullable<typeof p> => Boolean(p)),
+    [catalog, slugs]
+  )
+
+  if (!hydrated) {
+    return <div className="space-y-6" />
+  }
 
   if (products.length === 0) {
     return (

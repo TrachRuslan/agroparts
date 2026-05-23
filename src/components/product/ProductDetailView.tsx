@@ -1,64 +1,70 @@
 "use client"
 
-import React, { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import {
-  Star,
-  ShoppingCart,
-  ShieldCheck,
-  Truck,
-  RotateCcw,
-  MessageSquare,
-  Phone,
   ChevronRight,
-  Minus,
-  Plus,
   GitCompare,
+  Heart,
+  MessageSquare,
+  Minus,
+  Phone,
+  Plus,
+  RotateCcw,
+  ShieldCheck,
+  ShoppingCart,
+  Star,
+  Truck,
 } from "lucide-react"
+import { notFound } from "next/navigation"
+import { ProductCard } from "@/components/catalog/ProductCard"
+import { useCatalog } from "@/components/catalog/CatalogProvider"
+import { useHydrated } from "@/hooks/useHydrated"
 import {
+  getCategoryBySlug,
   getProductBySlug,
   getSimilarProducts,
-  getNestedProductPath,
-} from "@/lib/catalog/repository"
-import { getVehicle } from "@/lib/catalog/vehicles"
-import { getSystem } from "@/lib/catalog/systems"
+  getSystemBySlug,
+} from "@/lib/catalog/core"
+import { cn, formatPrice } from "@/lib/utils"
 import { useCartStore } from "@/stores/cart-store"
-import { useRecentStore } from "@/stores/recent-store"
 import { useCompareStore } from "@/stores/compare-store"
+import { useRecentStore } from "@/stores/recent-store"
 import { useWishlistStore } from "@/stores/wishlist-store"
-import { Heart } from "lucide-react"
-import { ProductCard } from "@/components/catalog/ProductCard"
-import { formatPrice, cn } from "@/lib/utils"
-import { notFound } from "next/navigation"
 
 const tabs = ["Опис", "Характеристики", "Сумісність", "Відгуки"] as const
 
 export function ProductDetailView({ productSlug }: { productSlug: string }) {
-  const product = getProductBySlug(productSlug)
-  const addRecent = useRecentStore((s) => s.add)
-  const addToCart = useCartStore((s) => s.addItem)
-  const toggleCompare = useCompareStore((s) => s.toggle)
-  const toggleWishlist = useWishlistStore((s) => s.toggle)
-  const isWishlisted = useWishlistStore((s) => s.has(productSlug))
+  const catalog = useCatalog()
+  const hydrated = useHydrated()
+  const product = getProductBySlug(catalog, productSlug)
+  const addRecent = useRecentStore((state) => state.add)
+  const addToCart = useCartStore((state) => state.addItem)
+  const toggleCompare = useCompareStore((state) => state.toggle)
+  const toggleWishlist = useWishlistStore((state) => state.toggle)
+  const rawWishlisted = useWishlistStore((state) => state.has(productSlug))
+  const isWishlisted = hydrated ? rawWishlisted : false
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (product) addRecent(product.slug)
   }, [product, addRecent])
 
   if (!product) notFound()
 
-  const [activeImg, setActiveImg] = useState(0)
+  const [activeImage, setActiveImage] = useState(0)
   const [quantity, setQuantity] = useState(1)
-  const [activeTab, setActiveTab] =
-    useState<(typeof tabs)[number]>("Опис")
+  const [activeTab, setActiveTab] = useState<(typeof tabs)[number]>("Опис")
   const [zoomed, setZoomed] = useState(false)
 
-  const similar = getSimilarProducts(product, 4)
-  const vehicle = getVehicle(product.vehicleSlug)
-  const system = getSystem(product.systemSlug)
-  const gallery = product.gallery.length ? product.gallery : [product.image]
+  const similar = useMemo(
+    () => getSimilarProducts(catalog, product, 4),
+    [catalog, product]
+  )
+  const vehicle = getCategoryBySlug(catalog, product.vehicleSlug)
+  const system = getSystemBySlug(catalog, product.systemSlug)
+  const gallery = product.gallery.length > 0 ? product.gallery : [product.image]
 
   return (
     <div className="bg-black pb-16">
@@ -98,7 +104,6 @@ export function ProductDetailView({ productSlug }: { productSlug: string }) {
         </nav>
 
         <div className="grid lg:grid-cols-12 gap-8 lg:gap-10">
-          {/* Gallery */}
           <div className="lg:col-span-6 space-y-4">
             <motion.div
               className={cn(
@@ -108,7 +113,7 @@ export function ProductDetailView({ productSlug }: { productSlug: string }) {
               onClick={() => setZoomed(!zoomed)}
             >
               <Image
-                src={gallery[activeImg]}
+                src={gallery[activeImage]}
                 alt={product.name}
                 fill
                 className={cn(
@@ -120,20 +125,20 @@ export function ProductDetailView({ productSlug }: { productSlug: string }) {
               />
             </motion.div>
             <div className="grid grid-cols-4 gap-2">
-              {gallery.map((img, i) => (
+              {gallery.map((image, index) => (
                 <button
-                  key={i}
+                  key={image + index}
                   type="button"
-                  onClick={() => setActiveImg(i)}
+                  onClick={() => setActiveImage(index)}
                   className={cn(
                     "relative aspect-square rounded-xl overflow-hidden border-2 bg-[#141414] transition-all",
-                    activeImg === i
+                    activeImage === index
                       ? "border-agro-yellow"
                       : "border-white/5 opacity-50 hover:opacity-100"
                   )}
                 >
                   <Image
-                    src={img}
+                    src={image}
                     alt=""
                     fill
                     className="object-contain p-1"
@@ -144,7 +149,6 @@ export function ProductDetailView({ productSlug }: { productSlug: string }) {
             </div>
           </div>
 
-          {/* Info + sticky buy */}
           <motion.div className="lg:col-span-6 flex flex-col">
             <div className="flex flex-wrap gap-2 mb-3">
               {product.isNew && (
@@ -168,12 +172,12 @@ export function ProductDetailView({ productSlug }: { productSlug: string }) {
 
             <div className="flex items-center gap-4 mb-4">
               <div className="flex items-center gap-1">
-                {Array.from({ length: 5 }).map((_, i) => (
+                {Array.from({ length: 5 }).map((_, index) => (
                   <Star
-                    key={i}
+                    key={index}
                     className={cn(
                       "w-4 h-4",
-                      i < Math.floor(product.rating)
+                      index < Math.floor(product.rating)
                         ? "text-agro-yellow fill-agro-yellow"
                         : "text-white/10"
                     )}
@@ -190,7 +194,7 @@ export function ProductDetailView({ productSlug }: { productSlug: string }) {
             </p>
 
             <div className="lg:sticky lg:top-24 glass-card p-6 mb-8 border-white/10">
-              <motion.div className="flex items-end gap-3 mb-4">
+              <div className="flex items-end gap-3 mb-4">
                 <span className="text-3xl md:text-4xl font-black text-white tabular-nums">
                   {formatPrice(product.price)}
                 </span>
@@ -199,7 +203,7 @@ export function ProductDetailView({ productSlug }: { productSlug: string }) {
                     {formatPrice(product.oldPrice)}
                   </span>
                 )}
-              </motion.div>
+              </div>
 
               <div
                 className={cn(
@@ -215,14 +219,14 @@ export function ProductDetailView({ productSlug }: { productSlug: string }) {
                     product.inStock ? "bg-agro-green animate-pulse" : "bg-red-500"
                   )}
                 />
-                {product.inStock ? "В наявності" : "Під замовлення 3–7 днів"}
+                {product.inStock ? "В наявності" : "Під замовлення 3-7 днів"}
               </div>
 
               <div className="flex flex-wrap gap-3">
                 <div className="flex items-center bg-black/40 border border-white/10 rounded-xl">
                   <button
                     type="button"
-                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                    onClick={() => setQuantity((value) => Math.max(1, value - 1))}
                     className="w-11 h-11 text-white/40 hover:text-white"
                   >
                     <Minus className="w-4 h-4 mx-auto" />
@@ -232,7 +236,7 @@ export function ProductDetailView({ productSlug }: { productSlug: string }) {
                   </span>
                   <button
                     type="button"
-                    onClick={() => setQuantity((q) => q + 1)}
+                    onClick={() => setQuantity((value) => value + 1)}
                     className="w-11 h-11 text-white/40 hover:text-white"
                   >
                     <Plus className="w-4 h-4 mx-auto" />
@@ -271,24 +275,23 @@ export function ProductDetailView({ productSlug }: { productSlug: string }) {
 
               <div className="grid grid-cols-3 gap-2 mt-5 pt-5 border-t border-white/5">
                 {[
-                  { icon: Truck, t: "Доставка 1–2 дні" },
-                  { icon: ShieldCheck, t: "Гарантія 12 міс" },
-                  { icon: RotateCcw, t: "Повернення 14 дн" },
+                  { icon: Truck, label: "Доставка 1-2 дні" },
+                  { icon: ShieldCheck, label: "Гарантія 12 міс" },
+                  { icon: RotateCcw, label: "Повернення 14 днів" },
                 ].map((item) => (
                   <div
-                    key={item.t}
+                    key={item.label}
                     className="text-center p-2 rounded-lg bg-white/[0.02]"
                   >
                     <item.icon className="w-4 h-4 text-agro-yellow mx-auto mb-1" />
                     <span className="text-[9px] text-white/40 font-bold uppercase leading-tight block">
-                      {item.t}
+                      {item.label}
                     </span>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Tabs */}
             <div className="border-b border-white/10 flex gap-1 overflow-x-auto mb-4">
               {tabs.map((tab) => (
                 <button
@@ -311,35 +314,34 @@ export function ProductDetailView({ productSlug }: { productSlug: string }) {
               {activeTab === "Опис" && <p>{product.description}</p>}
               {activeTab === "Характеристики" && (
                 <dl className="space-y-2">
-                  {Object.entries(product.specifications).map(([k, v]) => (
+                  {Object.entries(product.specifications).map(([key, value]) => (
                     <div
-                      key={k}
+                      key={key}
                       className="flex justify-between py-2 border-b border-white/5"
                     >
                       <dt className="text-white/35 text-xs uppercase font-bold">
-                        {k}
+                        {key}
                       </dt>
-                      <dd className="text-white font-semibold">{v}</dd>
+                      <dd className="text-white font-semibold">{value}</dd>
                     </div>
                   ))}
                 </dl>
               )}
               {activeTab === "Сумісність" && (
                 <div className="flex flex-wrap gap-2">
-                  {product.compatibility.map((m) => (
+                  {product.compatibility.map((model) => (
                     <span
-                      key={m}
+                      key={model}
                       className="px-3 py-1 rounded-lg bg-white/5 text-xs font-bold text-white/70"
                     >
-                      {m}
+                      {model}
                     </span>
                   ))}
                 </div>
               )}
               {activeTab === "Відгуки" && (
                 <p className="text-white/40">
-                  Середній рейтинг {product.rating} на основі{" "}
-                  {product.reviewsCount} відгуків. Залиште відгук після покупки.
+                  Середній рейтинг {product.rating} на основі {product.reviewsCount} відгуків.
                 </p>
               )}
             </div>
@@ -367,8 +369,8 @@ export function ProductDetailView({ productSlug }: { productSlug: string }) {
               Схожі <span className="text-agro-yellow">товари</span>
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-              {similar.map((p) => (
-                <ProductCard key={p.id} product={p} />
+              {similar.map((item) => (
+                <ProductCard key={item.id} product={item} />
               ))}
             </div>
           </section>

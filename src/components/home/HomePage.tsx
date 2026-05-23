@@ -1,20 +1,27 @@
 "use client"
 
-import Link from "next/link"
 import Image from "next/image"
+import Link from "next/link"
+import { useMemo } from "react"
 import { motion } from "framer-motion"
-import { Tractor, Star, Quote, Search, ArrowRight } from "lucide-react"
-import { Hero } from "@/components/home/Hero"
-import { BestSellers } from "@/components/home/BestSellers"
+import { ArrowRight, Quote, Search, Star, Tractor } from "lucide-react"
+import { useCatalog } from "@/components/catalog/CatalogProvider"
+import { countProducts } from "@/lib/catalog/core"
 import { Advantages } from "@/components/home/Advantages"
+import { BestSellers } from "@/components/home/BestSellers"
+import { Hero } from "@/components/home/Hero"
 import { HomeBrands } from "@/components/home/HomeBrands"
 import { SectionHeader } from "@/components/ui/SectionHeader"
-import { categories, reviews } from "@/lib/mock-data"
-import { countProducts, products } from "@/lib/catalog/repository"
+import { reviews } from "@/lib/mock-data"
 import { CONTACT } from "@/lib/site-content"
 
 export function HomePage() {
-  const totalProducts = products.length
+  const catalog = useCatalog()
+  const categories = useMemo(
+    () => catalog.categories.slice(0, 10),
+    [catalog.categories]
+  )
+  const totalProducts = catalog.products.length
 
   return (
     <div className="flex flex-col w-full">
@@ -51,16 +58,16 @@ export function HomePage() {
                 Запчастини за <span className="text-agro-yellow">моделлю</span>
               </>
             }
-            description="Оберіть виробника техніки — далі систему (двигун, КПП, гідравліка) та конкретну деталь."
+            description="Оберіть техніку, далі систему та конкретну деталь. Усі категорії на головній тепер синхронізуються з живим каталогом."
           />
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {categories.map((category, i) => (
+            {categories.map((category, index) => (
               <motion.div
                 key={category.id}
                 initial={{ opacity: 0, y: 12 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: i * 0.04 }}
+                transition={{ delay: index * 0.04 }}
               >
                 <Link
                   href={`/catalog/${category.slug}`}
@@ -78,7 +85,7 @@ export function HomePage() {
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent" />
                     <span className="absolute bottom-2 left-3 text-[10px] font-black text-agro-yellow tabular-nums">
-                      {countProducts(category.slug)} товарів
+                      {countProducts(catalog, category.slug)} товарів
                     </span>
                   </div>
                   <div className="p-4 flex items-center gap-3">
@@ -113,8 +120,11 @@ export function HomePage() {
               <div key={review.id} className="glass-card p-8 relative">
                 <Quote className="absolute top-6 right-6 w-10 h-10 text-agro-yellow/10" />
                 <div className="flex items-center gap-1 mb-4">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star key={i} className="w-4 h-4 text-agro-yellow fill-agro-yellow" />
+                  {Array.from({ length: 5 }).map((_, index) => (
+                    <Star
+                      key={index}
+                      className="w-4 h-4 text-agro-yellow fill-agro-yellow"
+                    />
                   ))}
                 </div>
                 <p className="text-white/70 italic mb-6 leading-relaxed text-sm">

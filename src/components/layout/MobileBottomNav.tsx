@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Home, LayoutGrid, Search, ShoppingCart, Phone } from "lucide-react"
+import { useHydrated } from "@/hooks/useHydrated"
 import { cn } from "@/lib/utils"
 import { useCartStore } from "@/stores/cart-store"
 
@@ -12,7 +13,9 @@ interface MobileBottomNavProps {
 
 export function MobileBottomNav({ onSearchOpen }: MobileBottomNavProps) {
   const pathname = usePathname()
+  const hydrated = useHydrated()
   const cartCount = useCartStore((s) => s.count())
+  const safeCartCount = hydrated ? cartCount : 0
 
   const items = [
     { href: "/", label: "Головна", icon: Home },
@@ -72,9 +75,9 @@ export function MobileBottomNav({ onSearchOpen }: MobileBottomNavProps) {
           aria-label="Кошик"
         >
           <ShoppingCart className="w-5 h-5" />
-          {cartCount > 0 && (
+          {safeCartCount > 0 && (
             <span className="absolute top-1 right-[calc(50%-14px)] w-4 h-4 bg-agro-yellow text-black text-[8px] font-black rounded-full flex items-center justify-center">
-              {cartCount > 9 ? "9+" : cartCount}
+              {safeCartCount > 9 ? "9+" : safeCartCount}
             </span>
           )}
           <span className="text-[9px] font-bold uppercase">Кошик</span>

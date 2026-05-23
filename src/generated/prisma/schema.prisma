@@ -1,0 +1,184 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrderStatus {
+  NEW
+  CONTACTED
+  PROCESSING
+  COMPLETED
+  CANCELED
+}
+
+model VehicleCategory {
+  id             String   @id @default(cuid())
+  slug           String   @unique
+  name           String
+  description    String?  @db.Text
+  image          String?
+  seoTitle       String?
+  seoDescription String?  @db.Text
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  products Product[]
+
+  @@map("vehicle_categories")
+}
+
+model SystemCategory {
+  id             String   @id @default(cuid())
+  slug           String   @unique
+  name           String
+  description    String?  @db.Text
+  image          String?
+  seoTitle       String?
+  seoDescription String?  @db.Text
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  products Product[]
+
+  @@map("system_categories")
+}
+
+model Brand {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  country   String?
+  createdAt DateTime @default(now())
+
+  products Product[]
+
+  @@map("brands")
+}
+
+model Product {
+  id               String   @id @default(cuid())
+  slug             String   @unique
+  sku              String   @unique
+  articleNumber    String
+  name             String
+  shortDescription String   @db.Text
+  description      String   @db.Text
+  price            Int
+  oldPrice         Int?
+  inStock          Boolean  @default(true)
+  stockQuantity    Int      @default(0)
+  rating           Float    @default(4.5)
+  reviewsCount     Int      @default(0)
+  isPopular        Boolean  @default(false)
+  isBestSeller     Boolean  @default(false)
+  isNew            Boolean  @default(false)
+  manufacturer     String?
+  seoTitle         String?
+  seoDescription   String?  @db.Text
+  vehicleSlug      String
+  systemSlug       String
+  vehicleId        String?
+  systemId         String?
+  brandId          String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  vehicle VehicleCategory? @relation(fields: [vehicleId], references: [id])
+  system  SystemCategory?  @relation(fields: [systemId], references: [id])
+  brand   Brand?           @relation(fields: [brandId], references: [id])
+
+  images          ProductImage[]
+  specifications  ProductSpecification[]
+  compatibilities Compatibility[]
+  reviews         Review[]
+  orderItems      OrderItem[]
+
+  @@index([vehicleSlug, systemSlug])
+  @@index([vehicleSlug])
+  @@index([systemSlug])
+  @@map("products")
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  url       String
+  alt       String?
+  sortOrder Int     @default(0)
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_images")
+}
+
+model ProductSpecification {
+  id        String  @id @default(cuid())
+  key       String
+  value     String
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_specifications")
+}
+
+model Compatibility {
+  id        String  @id @default(cuid())
+  model     String
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("compatibilities")
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  userName  String
+  userRole  String?
+  content   String   @db.Text
+  rating    Int
+  date      DateTime @default(now())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("reviews")
+}
+
+model Order {
+  id           String      @id @default(cuid())
+  customerName String
+  phone        String
+  comment      String?     @db.Text
+  status       OrderStatus @default(NEW)
+  total        Int         @default(0)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  items OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id          String  @id @default(cuid())
+  orderId     String
+  productId   String?
+  productName String
+  productSlug String?
+  sku         String?
+  image       String?
+  price       Int
+  quantity    Int     @default(1)
+
+  order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_items")
+}

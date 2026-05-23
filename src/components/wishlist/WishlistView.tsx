@@ -1,16 +1,29 @@
 "use client"
 
 import Link from "next/link"
+import { useMemo } from "react"
 import { Heart } from "lucide-react"
+import { useCatalog } from "@/components/catalog/CatalogProvider"
+import { useHydrated } from "@/hooks/useHydrated"
 import { useWishlistStore } from "@/stores/wishlist-store"
-import { getProductBySlug } from "@/lib/catalog/repository"
+import { getProductBySlug } from "@/lib/catalog/core"
 import { ProductCard } from "@/components/catalog/ProductCard"
 
 export function WishlistView() {
+  const catalog = useCatalog()
+  const hydrated = useHydrated()
   const slugs = useWishlistStore((s) => s.slugs)
-  const products = slugs
-    .map((slug) => getProductBySlug(slug))
-    .filter((p): p is NonNullable<typeof p> => Boolean(p))
+  const products = useMemo(
+    () =>
+      slugs
+        .map((slug) => getProductBySlug(catalog, slug))
+        .filter((p): p is NonNullable<typeof p> => Boolean(p)),
+    [catalog, slugs]
+  )
+
+  if (!hydrated) {
+    return <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5" />
+  }
 
   if (products.length === 0) {
     return (

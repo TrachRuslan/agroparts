@@ -1,6 +1,6 @@
 import { Product } from "@/types"
 import { absoluteUrl, SITE } from "./site"
-import { getNestedProductPath } from "@/lib/catalog/repository"
+import { getNestedProductPath } from "@/lib/catalog/core"
 
 export function JsonLd({ data }: { data: Record<string, unknown> }) {
   return (

@@ -2,16 +2,38 @@
 
 import Link from "next/link"
 import Image from "next/image"
+import { useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { GitCompare, X } from "lucide-react"
+import { useCatalog } from "@/components/catalog/CatalogProvider"
+import { useHydrated } from "@/hooks/useHydrated"
 import { useCompareStore } from "@/stores/compare-store"
-import { getProductBySlug } from "@/lib/catalog/repository"
+import { getProductBySlug } from "@/lib/catalog/core"
 
 export function CompareBar() {
+  const catalog = useCatalog()
+  const hydrated = useHydrated()
   const slugs = useCompareStore((s) => s.slugs)
   const remove = useCompareStore((s) => s.remove)
+  const products = useMemo(
+    () =>
+      slugs
+        .map((slug) => ({
+          slug,
+          product: getProductBySlug(catalog, slug),
+        }))
+        .filter(
+          (
+            item
+          ): item is {
+            slug: string
+            product: NonNullable<ReturnType<typeof getProductBySlug>>
+          } => Boolean(item.product)
+        ),
+    [catalog, slugs]
+  )
 
-  if (slugs.length === 0) return null
+  if (!hydrated || slugs.length === 0) return null
 
   return (
     <AnimatePresence>
@@ -24,9 +46,7 @@ export function CompareBar() {
         <div className="glass-card border border-agro-yellow/25 shadow-[0_20px_60px_-15px_rgba(255,184,0,0.35)] px-4 py-3 flex items-center gap-3">
           <GitCompare className="w-5 h-5 text-agro-yellow shrink-0" />
           <div className="flex gap-2 flex-1 overflow-x-auto scrollbar-thin">
-            {slugs.map((slug) => {
-              const product = getProductBySlug(slug)
-              if (!product) return null
+            {products.map(({ slug, product }) => {
               return (
                 <div
                   key={slug}

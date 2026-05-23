@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import {
   Search,
@@ -13,8 +13,10 @@ import {
   ChevronDown,
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
+import { useCatalog } from "@/components/catalog/CatalogProvider"
+import { useHydrated } from "@/hooks/useHydrated"
+import { countProducts } from "@/lib/catalog/core"
 import { cn } from "@/lib/utils"
-import { categories, countProducts } from "@/lib/mock-data"
 import { useCartStore } from "@/stores/cart-store"
 import { MAIN_NAV } from "@/lib/site-content"
 
@@ -24,10 +26,14 @@ interface HeaderProps {
 }
 
 export const Header = ({ onSearchOpen }: HeaderProps) => {
+  const catalog = useCatalog()
+  const hydrated = useHydrated()
+  const categories = useMemo(() => catalog.categories, [catalog.categories])
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [megaOpen, setMegaOpen] = useState(false)
-  const cartCount = useCartStore((s) => s.count())
+  const cartCount = useCartStore((state) => state.count())
+  const safeCartCount = hydrated ? cartCount : 0
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 16)
@@ -73,7 +79,9 @@ export const Header = ({ onSearchOpen }: HeaderProps) => {
                     href="/catalog"
                     className={cn(
                       "flex items-center gap-1 text-sm font-medium transition-colors",
-                      megaOpen ? "text-agro-yellow" : "text-white/70 hover:text-agro-yellow"
+                      megaOpen
+                        ? "text-agro-yellow"
+                        : "text-white/70 hover:text-agro-yellow"
                     )}
                   >
                     {link.label}
@@ -130,9 +138,9 @@ export const Header = ({ onSearchOpen }: HeaderProps) => {
               aria-label="Кошик"
             >
               <ShoppingCart className="w-5 h-5" />
-              {cartCount > 0 && (
+              {safeCartCount > 0 && (
                 <span className="absolute top-0.5 right-0.5 w-4 h-4 bg-agro-yellow text-black text-[8px] font-black rounded-full flex items-center justify-center">
-                  {cartCount > 9 ? "9+" : cartCount}
+                  {safeCartCount > 9 ? "9+" : safeCartCount}
                 </span>
               )}
             </Link>
@@ -159,7 +167,6 @@ export const Header = ({ onSearchOpen }: HeaderProps) => {
         </motion.div>
       </div>
 
-      {/* Mega menu */}
       <AnimatePresence>
         {megaOpen && (
           <motion.div
@@ -171,27 +178,27 @@ export const Header = ({ onSearchOpen }: HeaderProps) => {
             onMouseEnter={() => setMegaOpen(true)}
           >
             <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 grid grid-cols-4 gap-3 max-h-[360px] overflow-y-auto">
-              {categories.map((cat) => (
+              {categories.map((category) => (
                 <Link
-                  key={cat.id}
-                  href={`/catalog/${cat.slug}`}
+                  key={category.id}
+                  href={`/catalog/${category.slug}`}
                   className="group p-3 rounded-xl hover:bg-white/5 border border-transparent hover:border-white/10 transition-all"
                   onClick={() => setMegaOpen(false)}
                 >
                   <div className="font-bold text-white text-sm group-hover:text-agro-yellow transition-colors">
-                    {cat.name}
+                    {category.name}
                   </div>
                   <p className="text-[10px] text-white/35 mt-1">
-                    {countProducts(cat.slug)} товарів
+                    {countProducts(catalog, category.slug)} товарів
                   </p>
-                  {cat.subcategories && (
+                  {category.subcategories.length > 0 && (
                     <div className="mt-2 space-y-1">
-                      {cat.subcategories.slice(0, 3).map((sub) => (
+                      {category.subcategories.slice(0, 3).map((subcategory) => (
                         <span
-                          key={sub.id}
+                          key={subcategory.id}
                           className="block text-[10px] text-white/30 hover:text-white/60"
                         >
-                          {sub.name}
+                          {subcategory.name}
                         </span>
                       ))}
                     </div>
@@ -234,19 +241,19 @@ export const Header = ({ onSearchOpen }: HeaderProps) => {
                 className="block py-2 text-sm text-white/50"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                Кошик {cartCount > 0 ? `(${cartCount})` : ""}
+                Кошик {safeCartCount > 0 ? `(${safeCartCount})` : ""}
               </Link>
               <p className="text-[10px] font-black uppercase tracking-widest text-white/25 pt-4 pb-2">
                 Моделі
               </p>
-              {categories.map((cat) => (
+              {categories.map((category) => (
                 <Link
-                  key={cat.id}
-                  href={`/catalog/${cat.slug}`}
+                  key={category.id}
+                  href={`/catalog/${category.slug}`}
                   className="block py-2 pl-3 text-sm text-white/50"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  {cat.name} ({countProducts(cat.slug)})
+                  {category.name} ({countProducts(catalog, category.slug)})
                 </Link>
               ))}
             </div>

@@ -1,10 +1,19 @@
 generator client {
   provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+enum OrderStatus {
+  NEW
+  CONTACTED
+  PROCESSING
+  COMPLETED
+  CANCELED
 }
 
 model VehicleCategory {
@@ -89,6 +98,7 @@ model Product {
   specifications  ProductSpecification[]
   compatibilities Compatibility[]
   reviews         Review[]
+  orderItems      OrderItem[]
 
   @@index([vehicleSlug, systemSlug])
   @@index([vehicleSlug])
@@ -137,4 +147,38 @@ model Review {
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@map("reviews")
+}
+
+model Order {
+  id           String      @id @default(cuid())
+  customerName String
+  phone        String
+  comment      String?     @db.Text
+  status       OrderStatus @default(NEW)
+  total        Int         @default(0)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  items OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id          String   @id @default(cuid())
+  orderId     String
+  productId   String?
+  productName String
+  productSlug String?
+  sku         String?
+  image       String?
+  price       Int
+  quantity    Int      @default(1)
+
+  order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_items")
 }

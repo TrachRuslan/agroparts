@@ -1,14 +1,16 @@
 "use client"
 
-import React from "react"
+import React, { useMemo } from "react"
 import { motion } from "framer-motion"
-import { products } from "@/lib/mock-data"
-import { ProductCard } from "@/components/catalog/ProductCard"
-import Link from "next/link"
 import { ArrowRight } from "lucide-react"
+import Link from "next/link"
+import { useCatalog } from "@/components/catalog/CatalogProvider"
+import { getTrendingProducts } from "@/lib/catalog/core"
+import { ProductCard } from "@/components/catalog/ProductCard"
 
 export const BestSellers = () => {
-  const bestSellers = products.filter(p => p.isBestSeller || p.isPopular)
+  const catalog = useCatalog()
+  const bestSellers = useMemo(() => getTrendingProducts(catalog, 8), [catalog])
 
   return (
     <section className="py-12 md:py-16 px-4 md:px-8 bg-black relative overflow-hidden">

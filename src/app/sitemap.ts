@@ -1,9 +1,10 @@
 import type { MetadataRoute } from "next"
-import { vehicles, products } from "@/lib/catalog/repository"
-import { getSystemsForVehicle } from "@/lib/catalog/systems"
+import { getCatalogSnapshot } from "@/lib/catalog/data"
 import { absoluteUrl } from "@/lib/seo/site"
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const catalog = await getCatalogSnapshot()
+
   const staticPages: MetadataRoute.Sitemap = [
     { url: absoluteUrl("/"), changeFrequency: "daily", priority: 1 },
     { url: absoluteUrl("/catalog"), changeFrequency: "daily", priority: 0.95 },
@@ -12,22 +13,22 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: absoluteUrl("/delivery"), changeFrequency: "monthly", priority: 0.65 },
   ]
 
-  const vehiclePages = vehicles.map((v) => ({
-    url: absoluteUrl(`/catalog/${v.slug}`),
+  const vehiclePages = catalog.categories.map((category) => ({
+    url: absoluteUrl(`/catalog/${category.slug}`),
     changeFrequency: "weekly" as const,
     priority: 0.9,
   }))
 
-  const systemPages = vehicles.flatMap((v) =>
-    getSystemsForVehicle(v.systems).map((s) => ({
-      url: absoluteUrl(`/catalog/${v.slug}/${s.slug}`),
+  const systemPages = catalog.categories.flatMap((category) =>
+    category.subcategories.map((subcategory) => ({
+      url: absoluteUrl(`/catalog/${category.slug}/${subcategory.slug}`),
       changeFrequency: "weekly" as const,
       priority: 0.85,
     }))
   )
 
-  const productPages = products.map((p) => ({
-    url: absoluteUrl(`/product/${p.slug}`),
+  const productPages = catalog.products.map((product) => ({
+    url: absoluteUrl(`/product/${product.slug}`),
     changeFrequency: "weekly" as const,
     priority: 0.8,
   }))
